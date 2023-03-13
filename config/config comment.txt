@@ -1,0 +1,5 @@
+initializer range: the range of initial parameters
+n_ctx: maximum number of token for each sentence.
+embedding 768: map high dimentional one hot vector into low dimention
+n_layer: 6 decoder-only block
+n_positions 512: positional encoding length(512 token), a signal that indicate the position of each token.
