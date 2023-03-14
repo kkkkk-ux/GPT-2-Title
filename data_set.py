@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 logger=logging.getLogger(__name__)  #从__name__开始日志记录
 
-class GPTNewsTitleDataSet(Dataset):
+class GPT2NewsTitleDataSet(Dataset):
     """模型所需要的数据类"""
     # __init__ runs when class is Instantiate (实例化) into object
     def __init__(self,tokenizer,max_len,title_max_len,data_dir,data_set_name,path_file=None,is_overwrite=None):
@@ -24,13 +24,13 @@ class GPTNewsTitleDataSet(Dataset):
         """
         self.tokenizer=tokenizer
         # convert token to corresponding one-hot index of vacabulary
-        self.conten_id=self.tokenizer.convert_tokens_to_ids("[Content]")
+        self.content_id=self.tokenizer.convert_tokens_to_ids("[Content]")
         self.title_id=self.tokenizer.convert_tokens_to_ids("[Title]")
-        # 为了保留标题中的空格，也队=对空格保留训练
+        # 为了保留标题中的空格，也对空格保留训练
         self.space_id=self.tokenizer.convert_tokens_to_ids("[Space]")
         self.max_len=max_len
         self.title_max_len=title_max_len
-        cached_feature_file=os.path.join(data_dir,"cached_{}_{}".format((data_set_name,max_len)))
+        cached_feature_file=os.path.join(data_dir,"cached_{}_{}".format(data_set_name,max_len))
         # 若缓存文件存在且不可重新生成
         if os.path.exists(cached_feature_file) and not is_overwrite:
             logger.info("cache file {} aready exists, load it directly.".format(cached_feature_file))
@@ -50,7 +50,7 @@ class GPTNewsTitleDataSet(Dataset):
         :return:
         """
         self.data_set=[]
-        with open(path_file,"r",encoding="uft-8") as fh:
+        with open(path_file,"r",encoding="utf-8") as fh:
             data=json.load(fh)
             # enumerate is a function that add counter into iterable. idx come from enumerate.
             for idx,sample in enumerate(tqdm(data,desc="iter",disable=False)):
@@ -60,7 +60,7 @@ class GPTNewsTitleDataSet(Dataset):
                 self.data_set.append({"input_ids":input_ids,"token_type_ids":token_type_ids})
         return self.data_set
 
-    def convert_to_feature(self,sample):
+    def convert_feature(self,sample):
         """
         data treatment function
         sample: a dic, contains context and title, format:{"content":content,"title":title}
@@ -76,7 +76,7 @@ class GPTNewsTitleDataSet(Dataset):
             title_tokens=title_tokens[:self.title_max_len]
         # if content is too long, cut it
         if len(content_tokens) > self.max_len-len(title_tokens)-3:
-            content_tokens=content_tokens[self.max_len-len(title_tokens)-3]
+            content_tokens=content_tokens[:self.max_len-len(title_tokens)-3]
 
         # generate the input_ids
         # the class of input ids, eg:int, float
@@ -126,7 +126,7 @@ def collate_func(batch_data):
         #转换为tensor
         input_ids_list.append(torch.tensor(input_ids_temp,dtype=torch.long))
         token_type_ids_list.append(torch.tensor(token_type_ids_temp,dtype=torch.long))
-    
+
     # use pad_sequance to do padding
     return {"input_ids":pad_sequence(input_ids_list,batch_first=True,padding_value=0),
             "token_type_ids":pad_sequence(token_type_ids_list,batch_first=True,padding_value=0)}
